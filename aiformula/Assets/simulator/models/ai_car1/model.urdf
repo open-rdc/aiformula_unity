@@ -1,0 +1,240 @@
+<?xml version="1.0"?>
+<!--
+  ai_car1 URDF.
+
+  Hand-derived from models/ai_car1/model.sdf for use by
+  simulator/launch/gazebo_ignition.launch.py, which loads this file as the
+  `robot_description` of robot_state_publisher. The gz_ros2_control plugin
+  declared in model.sdf reads that same robot_description to pick up the
+  <ros2_control> block below.
+
+  The robot geometry / physics / sensors in Gazebo all come from model.sdf
+  (the world <include>s package://simulator/models/ai_car1). This URDF only
+  provides:
+    * the kinematic tree + joint names for TF (robot_state_publisher), and
+    * the <ros2_control> definition of caster_yaw_wheel, driven by
+      caster_yaw_position_controller (see models/ai_car1/ros2_control.yaml).
+
+  Link poses follow model.sdf: the `chassis` link keeps the SDF's yaw of pi
+  (pose "0 0 0.15 0 0 3.14"), and every child offset is expressed in that
+  rotated chassis frame exactly as in the SDF.
+-->
+<robot name="ai_car1">
+
+  <!-- ================= base ================= -->
+  <link name="base_link"/>
+
+  <!-- ================= chassis ================= -->
+  <link name="chassis">
+    <inertial>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <mass value="40.0"/>
+      <inertia ixx="1.73333" ixy="0.0" ixz="0.0"
+               iyy="4.56667" iyz="0.0" izz="4.56667"/>
+    </inertial>
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 3.14159"/>
+      <geometry>
+        <mesh filename="package://simulator/models/ai_car1/meshes/AIF_body.dae"/>
+      </geometry>
+    </visual>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 3.14159"/>
+      <geometry>
+        <mesh filename="package://simulator/models/ai_car1/meshes/AIF_body.dae"/>
+      </geometry>
+    </collision>
+  </link>
+
+  <joint name="base_to_chassis" type="fixed">
+    <parent link="base_link"/>
+    <child link="chassis"/>
+    <!-- SDF: chassis pose relative to model = 0 0 0.15 0 0 3.14 -->
+    <origin xyz="0 0 0.15" rpy="0 0 3.14159"/>
+  </joint>
+
+  <!-- ================= drive wheels ================= -->
+  <link name="left_wheel">
+    <inertial>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <mass value="7.0"/>
+      <inertia ixx="0.04778" ixy="0.0" ixz="0.0"
+               iyy="0.04778" iyz="0.0" izz="0.07875"/>
+    </inertial>
+    <visual>
+      <origin xyz="0 0 0" rpy="1.57 0 1.57"/>
+      <geometry>
+        <mesh filename="package://simulator/models/ai_car1/meshes/tire.dae"
+              scale="0.05 0.12 0.12"/>
+      </geometry>
+    </visual>
+    <collision>
+      <origin xyz="0 0 0" rpy="1.57 0 1.57"/>
+      <geometry>
+        <mesh filename="package://simulator/models/ai_car1/meshes/tire.dae"
+              scale="0.05 0.12 0.12"/>
+      </geometry>
+    </collision>
+  </link>
+
+  <link name="right_wheel">
+    <inertial>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <mass value="7.0"/>
+      <inertia ixx="0.04778" ixy="0.0" ixz="0.0"
+               iyy="0.04778" iyz="0.0" izz="0.07875"/>
+    </inertial>
+    <visual>
+      <origin xyz="0 0 0" rpy="1.57 0 1.57"/>
+      <geometry>
+        <mesh filename="package://simulator/models/ai_car1/meshes/tire.dae"
+              scale="0.05 0.12 0.12"/>
+      </geometry>
+    </visual>
+    <collision>
+      <origin xyz="0 0 0" rpy="1.57 0 1.57"/>
+      <geometry>
+        <mesh filename="package://simulator/models/ai_car1/meshes/tire.dae"
+              scale="0.05 0.12 0.12"/>
+      </geometry>
+    </collision>
+  </link>
+
+  <!-- SDF left_wheel pose relative to chassis = 0 -0.3 0 ... -->
+  <joint name="left_wheel_joint" type="continuous">
+    <parent link="chassis"/>
+    <child link="left_wheel"/>
+    <origin xyz="0 -0.3 0" rpy="0 0 0"/>
+    <axis xyz="0 1 0"/>
+    <limit effort="84.4" velocity="100.0"/>
+    <dynamics friction="0.9"/>
+  </joint>
+
+  <!-- SDF right_wheel pose relative to chassis = 0 0.3 0 ... -->
+  <joint name="right_wheel_joint" type="continuous">
+    <parent link="chassis"/>
+    <child link="right_wheel"/>
+    <origin xyz="0 0.3 0" rpy="0 0 0"/>
+    <axis xyz="0 1 0"/>
+    <limit effort="84.4" velocity="100.0"/>
+    <dynamics friction="0.9"/>
+  </joint>
+
+  <!-- ================= steered caster ================= -->
+  <!-- SDF: caster_frame attached to chassis, pose 0.8 0 0 0 0 1.57 -->
+  <link name="caster_frame">
+        <pose>-0.8 0 0 0 0 -1.57</pose>
+  </link>
+
+  <joint name="caster_frame_joint" type="fixed">
+    <parent link="chassis"/>
+    <child link="caster_frame"/>
+    <origin xyz="-0.8 0 0" rpy="0 0 -1.57"/>
+  </joint>
+  
+  <link name="caster_yaw">
+    <inertial>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <mass value="5.0"/>
+      <inertia ixx="0.001" ixy="0.0" ixz="0.0"
+               iyy="0.001" iyz="0.0" izz="0.001"/>
+    </inertial>
+  </link>
+
+  <joint name="caster_yaw_wheel" type="revolute">
+    <parent link="caster_frame"/>
+    <child link="caster_yaw"/>
+    <origin xyz="0 0 0" rpy="0 0 0"/>
+    <axis xyz="0 0 1"/>
+    <limit lower="-0.26" upper="0.26" effort="1000000.0" velocity="10.0"/>
+    <dynamics damping="10.0"/>
+  </joint>
+
+  <link name="caster">
+    <inertial>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <mass value="1.0"/>
+      <inertia ixx="0.04778" ixy="0.0" ixz="0.0"
+               iyy="0.04778" iyz="0.0" izz="0.07875"/>
+    </inertial>
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <mesh filename="package://simulator/models/ai_car1/meshes/tire.dae"
+              scale="0.1 0.1 0.1"/>
+      </geometry>
+    </visual>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <mesh filename="package://simulator/models/ai_car1/meshes/tire.dae"
+              scale="0.1 0.1 0.1"/>
+      </geometry>
+    </collision>
+  </link>
+
+  <joint name="caster_pitch_joint" type="continuous">
+    <parent link="caster_yaw"/>
+    <child link="caster"/>
+    <origin xyz="0 0 0" rpy="0 0 0"/>
+    <axis xyz="1 0 0"/>
+    <limit effort="1.0" velocity="10.0"/>
+    <dynamics damping="0.01"/>
+  </joint>
+
+  <!-- ================= IMU ================= -->
+  <link name="imu_link"/>
+  <joint name="imu_joint" type="fixed">
+    <parent link="chassis"/>
+    <child link="imu_link"/>
+    <!-- SDF imu_joint pose = -0.032 0 0.068 0 0 0 -->
+    <origin xyz="-0.032 0 0.068" rpy="0 0 0"/>
+  </joint>
+
+  <!-- ================= camera ================= -->
+  <link name="camera_link"/>
+  <joint name="camera_joint" type="fixed">
+    <parent link="chassis"/>
+    <child link="camera_link"/>
+    <!-- SDF camera_joint pose = 0.35 0 0.55 0 0 0 -->
+    <origin xyz="0.35 0 0.55" rpy="0 0 0"/>
+  </joint>
+
+  <link name="camera_rgb_link"/>
+  <joint name="camera_rgb_joint" type="fixed">
+    <parent link="camera_link"/>
+    <child link="camera_rgb_link"/>
+    <origin xyz="0 0 0" rpy="0 0 0"/>
+  </joint>
+
+  <link name="camera_depth_link"/>
+  <joint name="camera_depth_joint" type="fixed">
+    <parent link="camera_link"/>
+    <child link="camera_depth_link"/>
+    <origin xyz="0 0 0" rpy="0 0 0"/>
+  </joint>
+
+  <!-- ================= GNSS ================= -->
+  <link name="gps_link"/>
+  <joint name="gps_joint" type="fixed">
+    <parent link="chassis"/>
+    <child link="gps_link"/>
+    <origin xyz="0 0 0" rpy="0 0 0"/>
+  </joint>
+
+  <!-- ================= ros2_control (matches model.sdf) ================= -->
+  <ros2_control name="gz_ros2_control" type="system">
+    <hardware>
+      <plugin>gz_ros2_control/GazeboSimSystem</plugin>
+    </hardware>
+    <joint name="caster_yaw_wheel">
+      <command_interface name="position">
+        <param name="min">-0.26</param>
+        <param name="max">0.26</param>
+      </command_interface>
+      <state_interface name="position"/>
+      <state_interface name="velocity"/>
+    </joint>
+  </ros2_control>
+
+</robot>
